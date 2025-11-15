@@ -210,5 +210,7 @@ __marimo__/
 
 # Project-specific
 data/
+!data/known_names.json
 logs/
 *.log
+runtime_models/

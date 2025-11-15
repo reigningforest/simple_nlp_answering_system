@@ -15,6 +15,7 @@ from pinecone import Pinecone
 from sentence_transformers import SentenceTransformer
 
 from src.utils import get_shared_logger, load_config
+from src.rag.spacy_model import ensure_spacy_model
 
 import spacy  # type: ignore
 
@@ -87,8 +88,23 @@ class RetrievalEngine:
         logger.info("Loading sentence transformer model '%s' for query embedding", embedder_name)
         self.embedder = SentenceTransformer(embedder_name)
 
-        logger.info("Loading spaCy model for NER")
-        self.nlp = spacy.load(self.config.get("ner_model")) # type: ignore
+        ner_model_name = self.config.get("ner_model", "en_core_web_lg")
+        ner_model_version = str(self.config.get("ner_model_version", "3.7.1"))
+        ner_storage_dir = self.config.get("ner_model_storage_dir")
+        ner_model_url = self.config.get("ner_model_url")
+
+        logger.info(
+            "Ensuring spaCy model '%s' (version %s) is available",
+            ner_model_name,
+            ner_model_version,
+        )
+        model_path = ensure_spacy_model(
+            model_name=ner_model_name,
+            version=ner_model_version,
+            storage_dir=ner_storage_dir,
+            download_url=ner_model_url,
+        )
+        self.nlp = spacy.load(str(model_path))  # type: ignore[arg-type]
 
     def parse_question(self, question: str) -> Tuple[str, Optional[str]]:
         normalized = _normalize_question(question).strip()

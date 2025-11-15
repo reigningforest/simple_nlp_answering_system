@@ -24,7 +24,6 @@ A minimal API service that answers natural-language questions about member messa
 1. **Install dependencies**
    ```bash
    pip install -e .
-   python -m spacy download en_core_web_sm
    ```
 
 2. **Set environment variables**
@@ -72,7 +71,8 @@ A minimal API service that answers natural-language questions about member messa
    - `GROQ_API_KEY`
    - `GROQ_MODEL`
    - `MY_APP_API_KEY`
-5. Railway will automatically detect the Dockerfile and deploy
+5. Create a volume in Railway and mount it (for example to `/data`). Set `SPACY_MODEL_DIR=/data/spacy` so the large `en_core_web_lg` model is cached between deployments.
+6. Railway will automatically detect the Dockerfile and deploy
 
 ### Option 2: Render
 
@@ -127,6 +127,14 @@ Once deployed, visit `https://your-domain.com/docs` for interactive Swagger docu
 | `GROQ_MODEL` | Yes | Groq model name (default `llama-3.3-70b-versatile`) |
 | `MY_APP_API_KEY` | Yes | API key for client authentication |
 | `QA_CONFIG_PATH` | No | Path to config file (default: `config/config.yaml`) |
+| `SPACY_MODEL_DIR` | No | Directory (preferably on a persistent volume) where `en_core_web_lg` will be cached |
+
+## spaCy model caching
+
+The service requires `en_core_web_lg` for high-quality name extraction. Instead of baking the 600 MB wheel into the Docker image, the app now downloads the model at runtime into `runtime_models/spacy` (or the directory specified via `SPACY_MODEL_DIR`).
+
+- **Local development**: the first run will download the model into `./runtime_models/spacy`. Delete that folder to force a refresh.
+- **Railway / containers**: mount a persistent volume and point `SPACY_MODEL_DIR` to that path so the model is downloaded once and reused across deployments. Without a volume, the model will be fetched on each cold start, adding ~1 minute to boot time.
 
 ## Project Structure
 

@@ -21,3 +21,5 @@ distance_metric: cosine
 # Retrieval configuration
 qa_top_k: 50
 ner_model: en_core_web_lg
+ner_model_version: "3.7.1"
+ner_model_storage_dir: ./runtime_models/spacy

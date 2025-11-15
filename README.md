@@ -159,3 +159,7 @@ Once deployed, visit `https://your-domain.com/docs` for interactive Swagger docu
    - I thought about creating a structured timeline database summarizing user trips extracted from messages to facilitate more accurate date-related queries. However, this would require significant upfront processing and might not cover all edge cases, so I decided to rely on the existing message data with enhanced prompt engineering instead.
 4. **Categorizations of messages and query**:
    - I considered categorizing messages (e.g., travel plans, purchases, dining) and classifying user queries to route them to specialized retrieval/generation pipelines. However, this would add complexity and quite a bit of upfront processing, so I opted for a single unified approach with improved prompt instructions.
+
+
+### Data Insights
+

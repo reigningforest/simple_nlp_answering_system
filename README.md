@@ -10,7 +10,7 @@ A minimal API service that answers natural-language questions about member messa
 - **Vector Store**: Messages are embedded using FastEmbed (`BAAI/bge-small-en-v1.5`) and indexed in Pinecone
 - **Retrieval**: Uses semantic search with Name Entity Based (NER) based filtering plus a cached `known_names.json` lookup to validate/auto-complete member names before querying Pinecone vector database
 - **Generation**: Groq API generates natural language answers from context
-- **API**: FastAPI service with rate limiting and API key authentication
+- **API**: FastAPI service with rate limiting
 
 ## Local Development
 
@@ -31,7 +31,6 @@ A minimal API service that answers natural-language questions about member messa
    export PINECONE_API_KEY="your-pinecone-key"
    export GROQ_API_KEY="your-groq-key"
    export GROQ_MODEL="llama-3.3-70b-versatile"
-   export MY_APP_API_KEY="your-chosen-api-key"
    ```
 
 3. **Prepare data** (one-time setup)
@@ -53,10 +52,9 @@ A minimal API service that answers natural-language questions about member messa
 
 5. **Test locally**
    ```bash
-   curl -X POST http://localhost:8000/ask \
-     -H "Content-Type: application/json" \
-     -H "X-API-Key: your-chosen-api-key" \
-     -d '{"question": "When is Layla planning her trip to London?"}'
+    curl -X POST http://localhost:8000/ask \
+       -H "Content-Type: application/json" \
+       -d '{"question": "When is Layla planning her trip to London?"}'
    ```
 
 ## Deployment
@@ -70,7 +68,6 @@ A minimal API service that answers natural-language questions about member messa
    - `PINECONE_API_KEY`
    - `GROQ_API_KEY`
    - `GROQ_MODEL`
-   - `MY_APP_API_KEY`
 5. Create a volume in Railway and mount it (for example to `/data`). Set `SPACY_MODEL_DIR=/data/spacy` so the large `en_core_web_lg` model is cached between deployments.
 6. Railway will automatically detect the Dockerfile and deploy
 
@@ -84,7 +81,6 @@ A minimal API service that answers natural-language questions about member messa
    - `PINECONE_API_KEY`
    - `GROQ_API_KEY`
    - `GROQ_MODEL`
-   - `MY_APP_API_KEY`
 6. Deploy
 
 ### Option 3: Docker (Manual)
@@ -95,10 +91,9 @@ docker build -t nlp-qa-service .
 
 # Run locally
 docker run -p 8000:8000 \
-  -e PINECONE_API_KEY="your-key" \
+   -e PINECONE_API_KEY="your-key" \
    -e GROQ_API_KEY="your-groq-key" \
    -e GROQ_MODEL="llama-3.3-70b-versatile" \
-  -e MY_APP_API_KEY="your-api-key" \
   nlp-qa-service
 ```
 
@@ -109,7 +104,6 @@ Once deployed, visit `https://your-domain.com/docs` for interactive Swagger docu
 ### Endpoints
 
 **POST /ask**
-- Requires `X-API-Key` header
 - Rate limited to 5 requests/minute per IP
 - Request body: `{"question": "your question here"}`
 - Response: `{"answer": "the generated answer"}`
@@ -125,7 +119,6 @@ Once deployed, visit `https://your-domain.com/docs` for interactive Swagger docu
 | `PINECONE_API_KEY` | Yes | Your Pinecone API key |
 | `GROQ_API_KEY` | Yes | Groq API key for generation |
 | `GROQ_MODEL` | Yes | Groq model name (default `llama-3.3-70b-versatile`) |
-| `MY_APP_API_KEY` | Yes | API key for client authentication |
 | `QA_CONFIG_PATH` | No | Path to config file (default: `config/config.yaml`) |
 | `SPACY_MODEL_DIR` | No | Directory (preferably on a persistent volume) where `en_core_web_lg` will be cached |
 

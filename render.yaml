@@ -8,11 +8,7 @@ services:
     envVars:
       - key: PINECONE_API_KEY
         sync: false
-      - key: HF_TOKEN
+      - key: GROQ_API_KEY
         sync: false
-      - key: HF_LLM_MODEL
+      - key: GROQ_MODEL
         sync: false
-      - key: MY_APP_API_KEY
-        sync: false
-      - key: QA_CONFIG_PATH
-        value: config/config.yaml

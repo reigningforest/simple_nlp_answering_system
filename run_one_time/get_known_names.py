@@ -9,7 +9,7 @@ from typing import Dict
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 MESSAGES_PATH = DATA_DIR / "all_messages.json"
-OUTPUT_PATH = DATA_DIR / "known_names.json"
+OUTPUT_PATH = "config/known_names.json"
 
 
 def _normalize_name(value: str) -> str:

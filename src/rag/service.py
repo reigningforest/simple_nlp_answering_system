@@ -20,7 +20,7 @@ logger = get_shared_logger(__name__)
 
 
 BASE_DIR = Path(__file__).parent.parent.parent
-KNOWN_NAMES_PATH = BASE_DIR / "data" / "known_names.json"
+KNOWN_NAMES_PATH = BASE_DIR / "config" / "known_names.json"
 @dataclass
 class MemberResolution:
     display_name: Optional[str]

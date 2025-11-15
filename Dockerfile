@@ -15,6 +15,12 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Configure spaCy cache directory.
+# The app downloads en_core_web_lg at runtime into this path if it is missing.
+# In production, override SPACY_MODEL_DIR to a mounted persistent volume so the
+# 600MB model is fetched only once (Railway: mount /data and set SPACY_MODEL_DIR=/data/spacy).
+ENV SPACY_MODEL_DIR=/app/runtime_models/spacy
+
 # Copy application code
 COPY . .
 

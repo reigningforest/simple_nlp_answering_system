@@ -209,7 +209,7 @@ marimo/_lsp/
 __marimo__/
 
 # Project-specific
-!data/known_names.json
+!*known_names.json
 data/
 logs/
 *.log

@@ -88,52 +88,63 @@ curl -X POST https://simple-nlp-answering-system.up.railway.app/ask \
 ## Local Development
 
 ### Prerequisites
-- Python 3.11+
-- Pinecone account with an index created
+- Python 3.10-3.12
+- Pinecone account with an index created (`simple-nlp`, cosine similarity, 384 dimensions)
 - Groq account with an API key
 
 ### Setup
 
-1. **Install dependencies**
+1. **Clone the repository**
    ```bash
-   pip install -e .
+   git clone https://github.com/yourusername/simple_nlp_answering_system.git
+   cd simple_nlp_answering_system
    ```
 
-2. **Set environment variables**
+2. **Create and activate virtual environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set environment variables**
    ```bash
    export PINECONE_API_KEY="your-pinecone-key"
    export GROQ_API_KEY="your-groq-key"
    export GROQ_MODEL="llama-3.3-70b-versatile"
    ```
 
-3. **Prepare data** (one-time setup)
+5. **Prepare data** (one-time setup)
    ```bash
-   # Fetch messages from the API
+   # Fetch messages from the API and store in data/all_messages.json
    python run_one_time/get_messages.py
    
-   # Upload to Pinecone
+   # Generate embeddings and upload to Pinecone
    python run_one_time/pinecone_upload.py
 
-   # Cache normalized member names for validation
+   # Cache normalized member names for validation in config/known_names.json
    python run_one_time/get_known_names.py
    ```
 
-4. **Start the API server**
+6. **Start the API server**
    ```bash
    uvicorn main:app --reload
    ```
+   The server will start on `http://localhost:8000`. First startup takes ~20s to download and cache the spaCy model.
 
-5. **Ping the FastAPI health check**
+7. **Test the service**
    ```bash
+   # Health check
    curl -s http://localhost:8000/
-   ```
-   You should see `{ "status": "ok", "message": "Q&A Service is running." }` if the server is healthy.
-
-6. **Send a sample question**
-   ```bash
-    curl -X POST http://localhost:8000/ask \
-       -H "Content-Type: application/json" \
-       -d '{"question": "When is Layla planning her trip to London?"}'
+   
+   # Ask a question
+   curl -X POST http://localhost:8000/ask \
+      -H "Content-Type: application/json" \
+      -d '{"question": "When is Layla planning her trip to London?"}'
    ```
 
 ## Deployment
@@ -146,22 +157,19 @@ curl -X POST https://simple-nlp-answering-system.up.railway.app/ask \
 4. Add environment variables in the Railway dashboard:
    - `PINECONE_API_KEY`
    - `GROQ_API_KEY`
-   - `GROQ_MODEL`
-5. Create a volume in Railway and mount it (for example to `/data`). Set `SPACY_MODEL_DIR=/data/spacy` so the large `en_core_web_lg` model is cached between deployments.
-6. Railway will automatically detect the Dockerfile and deploy
-7. **Verify the live service**
+   - `GROQ_MODEL` (e.g., `llama-3.3-70b-versatile`)
+5. Railway will automatically detect the Dockerfile and deploy. The spaCy model is downloaded during Docker build.
+6. **Verify the live service**
     ```bash
-    export RAILWAY_URL="https://simple-nlp-answering-system.up.railway.app/"
-
-    # Health check
-    curl -s "$RAILWAY_URL/"
+    # Health check (replace with your Railway domain)
+    curl https://your-app.up.railway.app/
 
     # Ask a question
-    curl -X POST "$RAILWAY_URL/ask" \
+    curl -X POST https://your-app.up.railway.app/ask \
        -H "Content-Type: application/json" \
        -d '{"question": "When is Layla planning her trip to London?"}'
     ```
-    Replace `your-railway-subdomain` with the domain Railway assigns under the project’s Settings → Domains tab.
+    Find your domain under Railway Settings → Domains.
 
 ### Option 2: Render
 
@@ -212,14 +220,16 @@ Once deployed, visit `https://simple-nlp-answering-system.up.railway.app/docs` f
 | `GROQ_API_KEY` | Yes | Groq API key for generation |
 | `GROQ_MODEL` | Yes | Groq model name (default `llama-3.3-70b-versatile`) |
 | `QA_CONFIG_PATH` | No | Path to config file (default: `config/config.yaml`) |
-| `SPACY_MODEL_DIR` | No | Directory (preferably on a persistent volume) where `en_core_web_lg` will be cached |
+| `SPACY_MODEL_DIR` | No | Override for spaCy model storage (default: `./runtime_models/spacy`) |
 
-## spaCy model caching
+## spaCy Model Handling
 
-The service requires `en_core_web_lg` for high-quality name extraction. Instead of baking the 600 MB wheel into the Docker image, the app now downloads the model at runtime into `runtime_models/spacy` (or the directory specified via `SPACY_MODEL_DIR`).
+The service uses `en_core_web_md` (~90MB in memory) for name extraction, providing good accuracy while fitting Railway's free tier memory limits.
 
-- **Local development**: the first run will download the model into `./runtime_models/spacy`. Delete that folder to force a refresh.
-- **Railway / containers**: mount a persistent volume and point `SPACY_MODEL_DIR` to that path so the model is downloaded once and reused across deployments. Without a volume, the model will be fetched on each cold start, adding ~1 minute to boot time.
+**How it works:**
+- **Docker build**: Model is downloaded during `docker build` and baked into the image (no runtime download)
+- **Local development**: First startup downloads model to `./runtime_models/spacy` (~20s), then caches it for instant subsequent runs
+- **Production**: Model is pre-loaded during container startup (FastAPI lifespan) for fast first-request response (~3s)
 
 ## Project Structure
 

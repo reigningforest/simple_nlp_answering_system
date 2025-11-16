@@ -2,7 +2,25 @@
 
 A minimal API service that answers natural-language questions about member messages using retrieval-augmented generation (RAG).
 
-**Live Deployment:** [Add your URL here after deployment]
+## 🚀 Live Deployment
+
+**URL:** `https://simple-nlp-answering-system.up.railway.app/`
+
+**Quick Test:**
+```bash
+# Health check
+curl https://simple-nlp-answering-system.up.railway.app/
+
+# Ask a question
+curl -X POST https://simple-nlp-answering-system.up.railway.app/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How many cars does Vikram Desai have?"}'
+```
+
+**Example Questions:**
+- "When is Layla planning her trip to London?"
+- "How many cars does Vikram Desai have?"
+- "What are Amina's favorite restaurants?"
 
 ## Architecture
 
@@ -11,6 +29,44 @@ A minimal API service that answers natural-language questions about member messa
 - **Retrieval**: Uses semantic search with Name Entity Based (NER) based filtering plus a cached `known_names.json` lookup to validate/auto-complete member names before querying Pinecone vector database
 - **Generation**: Groq API generates natural language answers from context
 - **API**: FastAPI service with rate limiting
+
+## Design Notes
+### Alternative Approaches
+1. **Creating User Profiles**:
+   - Ideally, the simple name handling could be improved by maintaining a user profile database with nicknames and list of facts (e.g., favorite foods, hobbies). However, this would require additional data that likely wouldn't be able to be extracted from user messages along, so I opted for an approach using NER and cached names.
+   - To query the user profile database, I'd expose it via an MCP tool (client-initiated call into the profile service) or pipe the question through text-to-SQL so the agent can hit the structured database directly.
+2. **Improving Retrieval**:
+   - I considered building an agentic system where the first step would be to generate multiple alternative questions to improve lookup accuracy in Pinecone. However, for such a small dataset (and such short messages), this would likely add unnecessary complexity and latency without significant benefit.
+3. **Summary timeline database of user trips**:
+   - I thought about creating a structured timeline database summarizing user trips extracted from messages to facilitate more accurate date-related queries. However, this would require significant upfront processing and might not cover all edge cases, so I decided to rely on the existing message data with enhanced prompt engineering instead.
+4. **Categorizations of messages and query**:
+   - I considered categorizing messages (e.g., travel plans, purchases, dining) and classifying user queries to route them to specialized retrieval/generation pipelines. However, this would add complexity and quite a bit of upfront processing, so I opted for a single unified approach with improved prompt instructions.
+5.  **Keyword-Based Name Matching**:
+    - I considered creating a simple `Set` of all unique member names (e.g., "Vikram Desai") on startup. When a query came in, the service would iterate through this set and check if any name was a substring of the question.
+    - **Reason for Choosing NER Instead:** This simple keyword-matching approach is fast but very brittle. It would fail on common and crucial variations, particularly possessives (e.g., it wouldn't match "Layla" in "Layla's trip"). A statistical NER model, while not perfect, is trained to be context-aware and can correctly identify "Layla" as a `PERSON` entity from "Layla's," making it a more robust and flexible solution out-of-the-box.
+
+### Data Insights
+
+Analysis of 3,349 messages from 10 members over 364 days (Nov 2024 - Nov 2025) revealed:
+
+**Data Quality:**
+- No missing timestamps, duplicate IDs, or malformed data
+- All timestamps are UTC-aware and within valid range
+- Zero duplicate messages (100% unique content)
+- 2 extremely short messages (<10 chars) - appear to be incomplete sentences
+- 48 long messages (>88 chars) - mostly from Amina Van Den Berg requesting travel/concierge services
+
+**Message Patterns:**
+- Average message length: 68 characters (median: 68, std: 8.7)
+- Message frequency: ~26 hours between messages (median: 18 hours)
+- Fastest burst: 1.13 minutes between consecutive messages
+- Longest gap: 7.77 days between messages
+- Uneven distribution: 288-365 messages per user (Lorenzo Cavalli has fewest, Lily O'Sullivan has most)
+
+**Notable Observations:**
+- All users have nearly identical message counts (~334 avg), suggesting synthetic/balanced data generation
+- No duplicate message content despite high volume, indicating carefully curated dataset
+- Message timing shows realistic human patterns with variable gaps
 
 ## Local Development
 
@@ -78,7 +134,7 @@ A minimal API service that answers natural-language questions about member messa
 6. Railway will automatically detect the Dockerfile and deploy
 7. **Verify the live service**
     ```bash
-    export RAILWAY_URL="https://your-railway-subdomain.up.railway.app"
+    export RAILWAY_URL="https://simple-nlp-answering-system.up.railway.app/"
 
     # Health check
     curl -s "$RAILWAY_URL/"
@@ -118,7 +174,7 @@ docker run -p 8000:8000 \
 
 ## API Documentation
 
-Once deployed, visit `https://your-domain.com/docs` for interactive Swagger documentation.
+Once deployed, visit `https://simple-nlp-answering-system.up.railway.app/docs` for interactive Swagger documentation.
 
 ### Endpoints
 
@@ -167,21 +223,4 @@ The service requires `en_core_web_lg` for high-quality name extraction. Instead 
 └── requirements.txt       # Python dependencies
 ```
 
-
-## Design Notes
-### Alternative Approaches
-1. **Creating User Profiles**:
-   - Ideally, the simple name handling could be improved by maintaining a user profile database with nicknames and list of facts (e.g., favorite foods, hobbies). However, this would require additional data that likely wouldn't be able to be extracted from user messages along, so I opted for an approach using NER and cached names.
-   - To query the user profile database, I'd expose it via an MCP tool (client-initiated call into the profile service) or pipe the question through text-to-SQL so the agent can hit the structured database directly.
-2. **Improving Retrieval**:
-   - I considered building an agentic system where the first step would be to generate multiple alternative questions to improve lookup accuracy in Pinecone. However, for such a small dataset (and such short messages), this would likely add unnecessary complexity and latency without significant benefit.
-3. **Summary timeline database of user trips**:
-   - I thought about creating a structured timeline database summarizing user trips extracted from messages to facilitate more accurate date-related queries. However, this would require significant upfront processing and might not cover all edge cases, so I decided to rely on the existing message data with enhanced prompt engineering instead.
-4. **Categorizations of messages and query**:
-   - I considered categorizing messages (e.g., travel plans, purchases, dining) and classifying user queries to route them to specialized retrieval/generation pipelines. However, this would add complexity and quite a bit of upfront processing, so I opted for a single unified approach with improved prompt instructions.
-5.  **Keyword-Based Name Matching**:
-    - I considered creating a simple `Set` of all unique member names (e.g., "Vikram Desai") on startup. When a query came in, the service would iterate through this set and check if any name was a substring of the question.
-    - **Reason for Choosing NER Instead:** This simple keyword-matching approach is fast but very brittle. It would fail on common and crucial variations, particularly possessives (e.g., it wouldn't match "Layla" in "Layla's trip"). A statistical NER model, while not perfect, is trained to be context-aware and can correctly identify "Layla" as a `PERSON` entity from "Layla's," making it a more robust and flexible solution out-of-the-box.
-
-### Data Insights
 

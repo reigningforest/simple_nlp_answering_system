@@ -12,7 +12,7 @@ import unicodedata
 
 from dotenv import load_dotenv
 from pinecone import Pinecone
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 from src.utils import get_shared_logger, load_config
 from src.rag.spacy_model import ensure_spacy_model
@@ -85,8 +85,8 @@ class RetrievalEngine:
         self.index = self.pinecone.Index(self.pc_index_name)
 
         embedder_name = self.config.get("fast_embed_name") or "BAAI/bge-small-en-v1.5"
-        logger.info("Loading sentence transformer model '%s' for query embedding", embedder_name)
-        self.embedder = SentenceTransformer(embedder_name)
+        logger.info("Loading FastEmbed model '%s' for query embedding", embedder_name)
+        self.embedder = TextEmbedding(model_name=embedder_name)
 
         ner_model_name = self.config.get("ner_model", "en_core_web_lg")
         ner_model_version = str(self.config.get("ner_model_version", "3.7.1"))
@@ -126,7 +126,8 @@ class RetrievalEngine:
 
         logger.debug("Received question: %s", question)
         target_name = target_name_override or extracted_name
-        query_vector = self.embedder.encode(question).tolist()
+        query_embedding = list(self.embedder.embed([question]))[0]
+        query_vector = query_embedding.tolist()
 
         filter_clause = self._build_metadata_filter(target_name)
         logger.debug("Query filter: %s", filter_clause)

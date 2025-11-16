@@ -8,21 +8,16 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "pinecone",
-    "sentence-transformers",
     "fastembed",
     "spacy",
-    "en-core-web-lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1.tar.gz",
     "python-dotenv",
     "pydantic",
     "requests",
-    "ollama",
     "pyyaml",
-    "langchain",
-    "langchain-huggingface",
     "onnx",
     "onnxruntime",
     "numpy==1.26.4",
-
+    "tqdm",
 ]
 
 [project.optional-dependencies]

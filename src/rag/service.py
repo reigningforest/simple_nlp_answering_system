@@ -293,8 +293,8 @@ class QAService:
     @staticmethod
     def _format_invalid_name_message(suggestions: List[str]) -> str:
         if suggestions:
-            return "Enter a valid name. Closest matches: " + ", ".join(suggestions)
-        return "Enter a valid name. No close matches found."
+            return "No messages found for that member. Did you mean: " + ", ".join(suggestions) + "?"
+        return "No messages found for that member. Please check the name and try again."
 
 
 _qa_service: Optional[QAService] = None

@@ -65,7 +65,10 @@ def ensure_spacy_model(
     )
 
     try:
-        with tempfile.TemporaryDirectory() as tmpdir:
+        # Use the storage directory for temporary files to avoid /tmp space limits
+        temp_base = resolved_storage / ".tmp"
+        temp_base.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=temp_base) as tmpdir:
             temp_dir = Path(tmpdir)
             archive_path = temp_dir / "model.tar.gz"
             _download_file(archive_url, archive_path)

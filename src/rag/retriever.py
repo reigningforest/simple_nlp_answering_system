@@ -104,7 +104,12 @@ class RetrievalEngine:
             storage_dir=ner_storage_dir,
             download_url=ner_model_url,
         )
-        self.nlp = spacy.load(str(model_path))  # type: ignore[arg-type]
+        # spaCy models have a nested structure: model_path/model_name/model_name-version
+        inner_model = model_path / ner_model_name / f"{ner_model_name}-{ner_model_version}"
+        if inner_model.exists():
+            self.nlp = spacy.load(str(inner_model))  # type: ignore[arg-type]
+        else:
+            self.nlp = spacy.load(str(model_path))  # type: ignore[arg-type]
 
     def parse_question(self, question: str) -> Tuple[str, Optional[str]]:
         normalized = _normalize_question(question).strip()
